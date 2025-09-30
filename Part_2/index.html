@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Password Validator</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f9f9f9;
+      }
+      .container {
+        max-width: 480px;
+        margin: 2rem auto;
+        padding: 1.5rem;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        margin-bottom: 1rem;
+      }
+      form {
+        display: grid;
+        gap: 0.75rem;
+      }
+      input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      .rules {
+        list-style: none;
+        padding: 0;
+        margin: 0.25rem 0 0;
+      }
+      .rules li {
+        color: #a33;
+      }
+      .rules li.valid {
+        color: #2d7;
+      }
+      .ok {
+        color: #2d7;
+        font-weight: 600;
+      }
+      .err {
+        color: #a33;
+        font-weight: 600;
+      }
+      .strength {
+        height: 8px;
+        background: #eee;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .bar {
+        height: 100%;
+        background: linear-gradient(90deg, #f66, #fc3, #5c6, #2d7);
+        transition: width 0.2s ease;
+      }
+      .strength-label {
+        font-weight: 600;
+      }
+      button {
+        padding: 0.6rem 1rem;
+        border: none;
+        border-radius: 6px;
+        background: #2d7;
+        color: #fff;
+        font-weight: 600;
+      }
+      button[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <h1>Password Validator</h1>
+
+      <form @submit.prevent="onSubmit">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          v-model.trim="password"
+          @input="validate"
+          autocomplete="new-password"
+        />
+
+        <ul class="rules">
+          <li :class="{ valid: rules.length }">At least 8 characters</li>
+          <li :class="{ valid: rules.upper }">At least 1 uppercase</li>
+          <li :class="{ valid: rules.lower }">At least 1 lowercase</li>
+          <li :class="{ valid: rules.number }">At least 1 number</li>
+          <li :class="{ valid: rules.special }">
+            At least 1 special character (#?!@$%^&*-)
+          </li>
+          <li :class="{ valid: rules.noSpace }">No spaces</li>
+        </ul>
+
+        <label for="confirm">Confirm Password</label>
+        <input
+          id="confirm"
+          type="password"
+          v-model.trim="confirm"
+          @input="validate"
+          autocomplete="new-password"
+        />
+        <p v-if="confirm.length" :class="matches ? 'ok' : 'err'">
+          {{ matches ? 'Passwords match' : 'Passwords do not match' }}
+        </p>
+
+        <div class="strength">
+          <div class="bar" :style="{ width: strengthPercent + '%' }"></div>
+        </div>
+        <p class="strength-label">Strength: {{ strengthLabel }}</p>
+
+        <button type="submit" :disabled="!canSubmit">Register</button>
+      </form>
+    </div>
+
+    <script>
+      const { createApp, reactive, ref, computed } = Vue;
+
+      createApp({
+        setup() {
+          const password = ref("");
+          const confirm = ref("");
+          const rules = reactive({
+            length: false,
+            upper: false,
+            lower: false,
+            number: false,
+            special: false,
+            noSpace: false,
+          });
+
+          const matches = computed(
+            () => confirm.value && password.value === confirm.value
+          );
+          const canSubmit = computed(
+            () => Object.values(rules).every(Boolean) && matches.value
+          );
+
+          const strengthPercent = computed(() => {
+            const passed = Object.values(rules).filter(Boolean).length;
+            const total = Object.values(rules).length;
+            return Math.round((passed / total) * 100);
+          });
+
+          const strengthLabel = computed(() => {
+            const p = strengthPercent.value;
+            if (p < 50) return "Weak";
+            if (p < 80) return "Medium";
+            return "Strong";
+          });
+
+          function validate() {
+            const val = password.value;
+            rules.length = val.length >= 8;
+            rules.upper = /[A-Z]/.test(val);
+            rules.lower = /[a-z]/.test(val);
+            rules.number = /\d/.test(val);
+            rules.special = /[#?!@$%^&*\-]/.test(val);
+            rules.noSpace = !/\s/.test(val);
+          }
+
+          function onSubmit() {
+            if (!canSubmit.value) return;
+            alert("Password accepted!");
+          }
+
+          return {
+            password,
+            confirm,
+            rules,
+            matches,
+            canSubmit,
+            strengthPercent,
+            strengthLabel,
+            validate,
+            onSubmit,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
